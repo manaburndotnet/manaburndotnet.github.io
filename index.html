@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Coding: ASCII Burning Logo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Apply 'Inter' font or fallback to a suitable sans-serif */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a; /* Dark background for a terminal-like feel */
+            color: #00ff00; /* Classic green terminal text color */
+            height: 100vh;   /* Ensure body takes full viewport height */
+            margin: 0;       /* Remove default browser margin */
+            overflow: hidden; /* Hide scrollbars */
+            display: flex;             /* Enable Flexbox for centering content column */
+            flex-direction: column;    /* Stack children vertically */
+            justify-content: center;   /* Vertically center the column */
+            align-items: center;       /* Horizontally center items within the column */
+            position: relative; /* Needed for any potential absolute positioning (though removed for links) */
+        }
+
+        /* Styling for the ASCII art container itself (desktop version) */
+        .ascii-logo {
+            white-space: pre; /* Preserves whitespace and line breaks exactly as typed, crucial for ASCII art */
+            text-align: left; /* Maintains the internal alignment of the ASCII art */
+            margin: 0;        /* Remove default margin from the <pre> tag */
+            font-family: 'Courier New', 'Lucida Console', monospace; /* Monospace font ensures characters align */
+            font-size: 0.8em; /* Adjust as needed for desired density and size on screen */
+            line-height: 1;   /* Reduce line height to prevent gaps between ASCII rows */
+            user-select: none; /* Prevent text selection for a cleaner interaction */
+            position: relative; /* Needed for positioning individual characters */
+        }
+
+        /* Styling for individual characters in the animated version */
+        .ascii-char {
+            display: inline-block; /* Allows individual character transformation */
+            will-change: transform, opacity; /* Hint to browser for performance */
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            margin-right: -0.05em; /* Small adjustment for character spacing if needed */
+        }
+
+        /* Styling for the mobile ASCII art container */
+        .ascii-logo-mobile {
+            white-space: pre;
+            text-align: center; /* Center the simpler mobile logo */
+            margin: 0;
+            font-family: 'Courier New', 'Lucida Console', monospace;
+            font-size: 0.7em; /* Slightly smaller for mobile */
+            line-height: 1.2; /* Slightly more space for readability on mobile */
+            color: #00ff00; /* Ensure it's green */
+            display: none; /* Hidden by default, shown on mobile */
+            /* Removed padding: 10px; */ /* Removed as font size is adjusted */
+            /* overflow-x: auto; */ /* Removed as font size is adjusted */
+        }
+
+        /* Styling for the floating links container */
+        .floating-links-container {
+            display: flex; /* Use flexbox for stacking */
+            flex-direction: column; /* Stack vertically */
+            align-items: center; /* Center items horizontally within the container */
+            z-index: 10; /* Ensure it floats above the ASCII art on desktop, if any overlap */
+            background-color: rgba(26, 26, 26, 0.7); /* Slightly transparent background */
+            padding: 15px 25px; /* Padding around the links */
+            border-radius: 10px; /* Rounded corners */
+            /* Removed box-shadow: 0 0 15px rgba(0, 255, 0, 0.3); */
+            pointer-events: auto; /* Allow mouse events on the links */
+            margin-top: 4em; /* 3-4 lines of space below the logo (adjust as needed) */
+        }
+
+        .floating-links-container a {
+            font-family: 'Courier New', 'Lucida Console', monospace; /* Unicode-like font */
+            color: #00ff00; /* Green console text */
+            text-decoration: none; /* No underline by default */
+            font-size: 1.2em; /* Slightly larger text for links */
+            margin: 5px 0; /* Vertical spacing between links */
+            padding: 8px 15px; /* Padding for clickability */
+            /* Removed border: 1px solid #00ff00; */
+            border-radius: 5px; /* Rounded buttons (can keep for hover background if desired) */
+            transition: all 0.3s ease; /* Smooth transitions for hover effects */
+        }
+
+        .floating-links-container a:hover {
+            background-color: rgba(0, 255, 0, 0.2); /* Light green background on hover */
+            color: #ffffff; /* White text on hover */
+            /* Removed border-color: #ffffff; */
+            /* Removed transform: translateY(-2px); */
+        }
+
+
+        /* Added a global style for better visual consistency */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        /* --- Media Query for Mobile Viewports --- */
+        @media (max-width: 768px) { /* Adjust breakpoint as needed (e.g., typical tablet portrait) */
+            .ascii-logo {
+                display: none; /* Hide the animated version on mobile */
+            }
+            .ascii-logo-mobile {
+                display: block; /* Show the simplified version on mobile */
+                font-size: 0.25em; /* Further adjusted for smaller mobile screens */
+                padding: 0; /* Removed padding to maximize horizontal space */
+            }
+            .floating-links-container {
+                display: flex; /* Show links on mobile, maintain flex column */
+                /* Adjust spacing if needed for mobile */
+                margin-top: 2em; /* Slightly less margin on mobile perhaps */
+                padding: 10px 15px; /* Smaller padding for mobile buttons */
+            }
+            .floating-links-container a {
+                font-size: 1em; /* Smaller font for mobile links */
+                padding: 6px 12px;
+            }
+            body {
+                /* On mobile, allow content to flow naturally, but keep horizontal centering */
+                display: flex; /* Keep flex display */
+                flex-direction: column; /* Keep column direction */
+                align-items: center; /* Keep horizontal centering */
+                padding: 10px; /* General body padding for mobile */
+                height: auto; /* Allow body to extend if content requires */
+                overflow-y: auto; /* Allow vertical scroll on mobile */
+                justify-content: flex-start; /* Align content to top on mobile to avoid excess space below logo */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Desktop/Animated Version -->
+    <pre class="ascii-logo" id="asciiArtContainer">
+                                                                                                                                                                                     
+      @@@@@@@@  @@@         @@@@@@@@@@@#%@                                                                                                                                           
+    @@-......:#*-.+@@      @+.:.-:==....*@                                                                                                                                           
+    @%==@@@+.......-@@     @@@@@*..=..:@@                              @@@@@            @@@@@@@    @@  @@  @@@                                                                       
+      @    @*..-..:.*@         @+......:@          @@@@@@@@@@@@@   @@@@@..-#@@      @@#+--:-.:+@ @#-=%#=:@@:+@@                                                                      
+           @+=:..-:::@@       @#=*:..:#.-@        @=.....:=*:.%@ @@+.....:-+:+%@@   @@##+--...@@ @%%%#.-:.:.%@@                                                                      
+           @=-:=+=.+:.@@     @@::@+.-%-:=@@        @@@@+......+@ @*-@@@-:..+:.#@@@       @@..:@@    @@--...::*@                                                                      
+          @@.-@@..-:...@@    @@@@@@#.+:=.=@          @@...=...%@@ @@  @@.#%..:*..=@@      @%.=@    @@@@+.....:@@                                                                     
+          @@*@@@@+-%#+:+@@ @@+-@@ @@*#=.:-+@        @*+@@==-:.:+@@     @@@@@*#:...:-@@    @@*#@   @#:@@@=.-+:..@@                                                                    
+         @@@@    @+%::..-@@@-.%@   @@:---:.@@     @@=.%@@@+.::..+@    @@-+@  @@:=#*.:%@@  @@=%@ @@#.=@  @:.:%:.%@                                                                    
+        @%-%@    @@:::...:#:.#@    @@@@#-..-@    @@=.#@  @%-=:-%%@@   @@:-@   @@+:.:#::@@ @@:#@@@::+@   @@-*....=@@                                                                  
+        @=:%@     @@+.:...:.:@@     @@+:-::.#@  @@:.-@    @*.....:#@  @@.*@     @@-.....@@@@+@@%..:@@    @*+#.+.%#@                                                                  
+       @%:@@       @+::=:-:.#@       @@..-...@@@-..+%@    @%:.:-..:@@ @%::@       @#.....-@@+@#...=@    @@@@%:+-#@%@@                                                                
+      @@-.@@        @+.....:@@        @*=.+..:@*...%@   @@@@@*:.-...+@@#.:@        @@*=:..-@.-...-@  @@@#@@@@.:-..:=@@                                                               
+      @%.:@@        @@::....=@@       @@-:#:..+....%@@@@==@@ @%++=..-#@...-@@        @#...........=@@+=:@@  @@++*@-:+@@                                                              
+     @@..:@@         @%......*@       @@.:.+........#:.+:@@   @#....%*=-:.:.%@@@@@    @@+...........#..%@    @%..*%:.:*@                                                             
+    @@-...:@@         @-....+@@      @#=:...........:..*#@ @@ @@+.:%@:.%%#....*:%@     @@=.:%+:#%##*+#%@      @@%@@@@@@@                                                             
+   @@.-===#@@        @@..:@@@        @@%@@@@@@@@@@@@@@@@@@%-:++-=+#@@#%=:@@@@@@@       @@:#@ @@                                                                                      
+  @@=:@@             @@.=@@                              @+..:@+....:...-@              @@@                                                                                          
+  @@*@@               @@@                                 @@@@@@---=.++-@@@@@@@@@@@@@@@@                                                                                             
+                                                               @#--..:.#@:..=.-.:...+:##@@                                               @@@@@@@@@@@@@    @@%@@@           @@@@@@@@  
+                                                               @@-%-%..:@@@@@@@@+:*:=....*@       @@   @@@@@@     @@@@@@@@@*=@@@@@@@@@@@@+:..-:......+@@@@@+...@@@     @@%-:::.-..@@ 
+                                                                @+=+.:--@@       @-=:....+@    @@=::-%@+=.%@@     @*=+:=.:=--*:#:.-++..*@@@@@@%-......::.........+@@   @@%@%%#:..+@  
+                                                               @@..=.::+@@      @@=.....:@@     @@@@%=..:.@@        @@:.#@@%@@@@%+%=:.@@       @#......#@@%...:.-=.%@@       @+..*@  
+                                                               @%*....##@@  @@@%#:.-:%@@@@@@@@@@@  @@.....@@         @+.-+@*@  @@:@-.:@         @-....*@  @%+@#.-....#@@      @=.@@  
+                                                               @%:....+*-=@@:.*:..:.:*..:.=:....#@@@@....=@          @+.:==%@  @+:=..:@        @#.:..+@   @@@@@@*-+-+.:+@     @*:@@  
+                                                               @@:*#-=#:@@@@@@@@@@@@@@@@#*........-@@....-@          @+.-.==@  @#+:--:@       @*...=@@    @#:@@  @%=*=-:-@@   @+:@@  
+                                                               @@......:@              @=.-:......-@@.....@          @@:*.:+@  @@::#-:@ @@@@@+=%%@@@      @@+@@   @@+#--=.*@@ @++@@  
+                                                               @*.=-#=.:@              @=-==......-@@+.+-.@          @#=---#@  @%::..=#@:....#:.=@@       @+-@@     @%+@+:+*@@@@#@   
+                                                               @%:.=.-.:@@            @@..--....:.%@@..:..@@         @+.-+.*@  @%:..:.@@@@#:::....@@     @@%%@@      @@*+=-..*@@@@   
+                                                               @@..:.:+.@@            @@=.......:#@@@..:.%@@        @#=..-.@@  @%:+...@@  @@%......+@@   @@*+%@        @@:%::=#*:%@  
+                                                               @@:.:..:.@@          @@@@-%+%=:*@@@ @@-:::==@       @@+-@#--+@  @#.:-=:@@    @@-=#.-#:#@@ @#:#=%@        @@-:=.-..-@@ 
+                                                               @@........@@@    @@@@=--%-#+--:@@    @=-.:..-@@@@@@@@::.**:+.#@@@@-....:@@@@  @@=..-%%-=@@@%..:-:@@@@@     @@::...#@  
+                                                                @=.........:=++=+-%=*=:-+%*#@@@     @@-+...%-#...#@@@@@=..:...:@#.........@@   @#-:+%+=@%@#.-=++:=-*@@     @@..*@@   
+                                                               @=-##**#%##%%@@@@@@@@@        @@@@@@@@    @@@@@@@:#@@@@@@   @@@@@@@@%@@@@@     @@*@@   
+                                                                @@@@   @@                                                      @@@@                                         @@       
+                                                                                                                                                                                     
+    </pre>
+
+    <!-- Mobile/Static Version -->
+    <pre class="ascii-logo-mobile" id="asciiArtMobile">
+                           @@@                                                                                                     
+   @%*****#%*#@    @@=-=+*=:.=@                                                                                                    
+   @##@@*.....+@    @@@%.:::+@                     @@%@@       @@@@@@  @@@@@@@@@                                                   
+        @-::.:.*@     @*-..::*@     @#=++=#%=@@ @*-=-::+@@  @@=:....+@@+-*:.--*@@                                                  
+       @@--=+:::#@   @#:#--#:*@     @@@@=....#@@+*@#-:--:#@@   @@%-.%@ @@@+=.-:+@                                                  
+       @#-%@:-:::@@  @@@@@+--:#@      @@%-:..%@@   @@@#--..-@@   @*:@  @%+@:...-%                                                  
+      @@@@  @#*+:-%@%:%@ @@*--:#@   @@=+@@+:-:+@   @*%@@@=-+:+@@ @*=@ @*:@@@+-+-+@                                                 
+      @*%@   @--..::.*@   @@@+:-@@ @%:=@ @@-:-*#@  @+#@  @%::+:#@@*-@@-:%@ @%#:.::@@                                               
+     @#+%@   @%:-.:::@@   @%-::.+@@*::#@  @*....+@ @**@   @@+..:*@@@%:.=@   @*=-=*%@                                               
+    @@-*@     @#:...*@     @%:-::##..#@ @@%@#-::.+@%:=@     @@+..-+.:.:@@@%*%@@-=-:-@@                                             
+    @+-*@      @-...:*@     @=-:.....=@%-*@@@@-..:=#:.=@@@    @+.......:-::%@  %-:*:-%@                                            
+   @#:.-%@     @%:..-#@   @@+-..:.....:.+% @@@#:-#-=*+-:-=%@   @#.-+-+*+=+%@   @%*%@##@                                            
+  @*:##%@      @*.=@@      @@@@@@@@@@@@@@@+.:::-*#=++@  @      @%#@                                                                
+  @+@@          @%@                      @@%@@+.::--#@@@@@@@@@@                                                                    
+   @                                          %+-::-%--+--:.--=*%@          @@      @@@ @@@@ @@ @@@@@@@@@@@@@ @@%*%@      @@@@@@@@ 
+                                              @+--=:#@@  @@#=....@@  @@@@@@#-#@   @*::-+=-:-*-====+*-::.....:%-.:..:%@@  @-=-=::-@ 
+                                              @=::.=#@   @@#:.::*@   @%%%+-.-%     @@*.+%#@@@##=:#@  @@@#:...=%@=.::=:#@  @@@@+.+@ 
+                                              %-...#%@@%*==..=*+==+*#%@@@::-*@      @%:=+*@ @+=:-@      @-..=@@ @@@*=::=#@@   %-%@ 
+                                              @-*==++@@@@@@@@@@#+-.=..:*@:..+@      @#::-+@ @====@     @-.:#@  @%+@@@%=:=-%@  %-@@ 
+                                              @--:.-#         @@::-:...+@...-@       @==:*@ @*=*-%@@@#==%@@    @%+@  @@+--:=% @+@@ 
+                                             @#=::+:#@        @@::-....+@*..-@      @#:.:=@ @+.--@@*---..*@    @#=@    @@#+:=@@@@  
+                                              @-:--+*@        @@::...:+@@:-:+@      @+:::%@ @+:..%@ @%-.::-%@  @%+@@    @@*=:++-#@ 
+                                              @-....+@@    @@%*%***-*@@ @+-.=*@@@@@@#-*=:-@@@+:-:#@@  @+:.--+@@@-:-%@@@@  @%-:..-@ 
+                                              @=......-+##+*#=--++*@@   @%-..=-=::#@@@+.:..:@=.....:@@ @#-:#+*@@-:+=--*@   @@::#@  
+                                              @=-##**#%##%%@@@@@@@@@        @@@@@@@@    @@@@@@@:#@@@@@@   @@@@@@@@%@@@@@     @@*@@   
+                                               @@                                           @@@                                    
+    </pre>
+
+    <!-- Links Container (positioned after logos for proper stacking) -->
+    <div class="floating-links-container">
+        <a href="https://www.manaburn.net" target="_blank" rel="noopener noreferrer">Issues</a>
+        <a href="mailto:submissions@manaburn.net">Contact</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const asciiArtContainer = document.getElementById('asciiArtContainer');
+            // The mobile ASCII art is already hardcoded in the HTML and doesn't need JS manipulation
+            // const asciiArtMobile = document.getElementById('asciiArtMobile'); 
+
+            // Determine if we are in desktop view based on CSS media query effect
+            // We check the display style of the desktop container to see if CSS has hidden it.
+            const isDesktopView = window.getComputedStyle(asciiArtContainer).display !== 'none';
+
+            if (isDesktopView) {
+                const originalText = asciiArtContainer.textContent;
+                let charData = []; // Store all character properties
+
+                // Character set ordered from most dense/bright to least dense/dark (for burning effect)
+                const charBrightnessMap = [' ', ' ', ' ', '.', ',', ':', ';', '=', '+', '*', '?', '%', '#', '@'];
+                const originalCharColor = '#00ff00'; // Default green terminal color
+
+                // Function to get the approximate "brightness index" of a character from our map
+                const getBrightnessIndex = (char) => {
+                    const index = charBrightnessMap.indexOf(char);
+                    return index === -1 ? 0 : index; // Default to ' ' if char not in map
+                };
+
+                // Helper for color interpolation (no longer used for fire, but kept for potential future use or original healing blend)
+                const interpolateColor = (color1, color2, factor) => {
+                    const r1 = parseInt(color1.substring(1, 3), 16);
+                    const g1 = parseInt(color1.substring(3, 5), 16);
+                    const b1 = parseInt(color1.substring(5, 7), 16);
+
+                    const r2 = parseInt(color2.substring(1, 3), 16);
+                    const g2 = parseInt(color2.substring(3, 5), 16);
+                    const b2 = parseInt(color2.substring(5, 7), 16);
+
+                    const r = Math.round(r1 + (r2 - r1) * factor);
+                    const g = Math.round(g1 + (g2 - g1) * factor);
+                    const b = Math.round(b1 + (b2 - b1) * factor);
+
+                    const toHex = (c) => ('0' + c.toString(16)).slice(-2);
+                    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+                };
+
+
+                // Physics parameters for the rubber band/inertia feel
+                const springStiffness = 0.08; // How strong the "rubber band" pulls characters back
+                const dampingFactor = 0.85;  // How quickly movement dies down (0.95 is less damping, 0.85 is more)
+                const mouseRepulsionStrength = 50; // How strongly the mouse pushes characters away
+                const rippleRadius = 80; // Radius of influence around the mouse
+                const characterBurnIntensity = 5; // How many "brightness levels" characters shift towards being burnt
+
+                // Variables for mouse smoothing
+                let targetMouseX = -1000; // Actual mouse position from event
+                let targetMouseY = -1000;
+                let smoothedMouseX = -1000; // Smoothed position used for physics
+                let smoothedMouseY = -1000;
+                const mouseSmoothingFactor = 0.15; // How quickly smoothed position catches up to target
+
+                // Inactivity and Healing parameters
+                const inactivityThresholdMs = 15000; // 15 seconds
+                const healingSpeedFactor = 0.05; // How quickly characters heal (0 to 1, higher = faster)
+                let lastActivityTime = Date.now(); // Track last mouse move or button press
+
+                let animationFrameId = null; // To control the animation loop
+                let healingCheckIntervalId = null; // To control the healing timer
+
+
+                // Function to wrap each character in a span and get its initial position
+                function initializeAsciiCharacters() {
+                    asciiArtContainer.innerHTML = ''; // Clear existing content
+                    charData = []; // Reset charData for re-initialization
+
+                    const lines = originalText.split('\n');
+                    let charCount = 0;
+
+                    lines.forEach((line) => {
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            const span = document.createElement('span');
+                            span.className = 'ascii-char';
+                            span.textContent = char;
+                            asciiArtContainer.appendChild(span);
+
+                            charData.push({
+                                element: span,
+                                originalChar: char,
+                                originalBrightnessIndex: getBrightnessIndex(char),
+                                originalX: 0, // Will be updated accurately after initial render
+                                originalY: 0, // Will be updated accurately after initial render
+                                currentX: 0,  // Character's current X position for physics
+                                currentY: 0,  // Character's current Y position for physics
+                                velocityX: 0, // Character's current velocity in X direction
+                                velocityY: 0,  // Character's current velocity in Y direction
+                                currentBrightnessIndex: getBrightnessIndex(char), // For healing
+                                currentColor: originalCharColor, // Always green now
+                                isUnderMouseInfluence: false // Track if currently pushed/burnt
+                            });
+                            charCount++;
+                        }
+                        // Add line break after each actual line from the ASCII art
+                        asciiArtContainer.appendChild(document.createTextNode('\n'));
+                    });
+
+                    // Correctly remove the last extra newline added by the loop
+                    if (charCount > 0) {
+                         const lastChild = asciiArtContainer.lastChild;
+                         if (lastChild && lastChild.nodeType === Node.TEXT_NODE && lastChild.textContent === '\n') {
+                             asciiArtContainer.removeChild(lastChild);
+                         }
+                    }
+
+                    console.log(`Initialized ${charCount} characters.`);
+
+                    // Use setTimeout to ensure initial layout is stable before measurements
+                    setTimeout(() => {
+                        charData.forEach((data, index) => {
+                            const rect = data.element.getBoundingClientRect();
+                            data.originalX = rect.left + rect.width / 2;
+                            data.originalY = rect.top + rect.height / 2;
+                            // Initialize current positions to original positions
+                            data.currentX = data.originalX;
+                            data.currentY = data.originalY;
+                            data.velocityX = 0;
+                            data.velocityY = 0;
+                            data.currentBrightnessIndex = data.originalBrightnessIndex;
+                            data.currentColor = originalCharColor; // Ensure initial color is green
+
+                            // Debugging: Log position of a few characters to verify
+                            if (index < 5 || index > charData.length - 5) {
+                                console.log(`Char '${data.originalChar}' (Index ${index}): OriginalX=${data.originalX}, OriginalY=${data.originalY}`);
+                            }
+                        });
+                        console.log('Character positions calculated and physics initialized.');
+
+                        // Initialize smoothed mouse position to center of screen if not yet moved
+                        if (targetMouseX === -1000 && targetMouseY === -1000) {
+                            smoothedMouseX = window.innerWidth / 2;
+                            smoothedMouseY = window.innerHeight / 2;
+                            targetMouseX = smoothedMouseX; // Also set target so smoothing doesn't jump
+                            targetMouseY = smoothedMouseY;
+                        } else {
+                            // If mouse has already moved, snap smoothed position to target
+                            smoothedMouseX = targetMouseX;
+                            smoothedMouseY = targetMouseY;
+                        }
+
+                        // Start the animation loop if it's not already running
+                        if (!animationFrameId) {
+                            animationLoop();
+                        }
+                        // Start the healing check interval
+                        if (!healingCheckIntervalId) {
+                            healingCheckIntervalId = setInterval(checkHealingStatus, 1000); // Check every second
+                        }
+
+                    }, 100); // Small delay to allow DOM to render fully
+                }
+
+                // Function to check if healing should occur
+                function checkHealingStatus() {
+                    if (Date.now() - lastActivityTime > inactivityThresholdMs) {
+                        // console.log("Healing initiated due to inactivity.");
+                        // The animation loop will naturally handle the healing interpolation
+                    }
+                }
+
+
+                // The main animation loop for physics simulation and rendering
+                function animationLoop() {
+                    // Smooth the mouse position to create the trailing effect
+                    smoothedMouseX += (targetMouseX - smoothedMouseX) * mouseSmoothingFactor;
+                    smoothedMouseY += (targetMouseY - smoothedMouseY) * mouseSmoothingFactor;
+
+                    const isMouseActive = Date.now() - lastActivityTime < inactivityThresholdMs;
+
+                    charData.forEach(data => {
+                        // Reset influence flag
+                        data.isUnderMouseInfluence = false;
+
+                        // 1. Calculate Spring Force (pulls character back to original position)
+                        const distXFromOriginal = data.originalX - data.currentX;
+                        const distYFromOriginal = data.originalY - data.currentY;
+                        let forceX = distXFromOriginal * springStiffness;
+                        let forceY = distYFromOriginal * springStiffness;
+
+                        // 2. Calculate Mouse Repulsion Force & Burning Visuals
+                        const distXFromMouse = smoothedMouseX - data.currentX;
+                        const distYFromMouse = smoothedMouseY - data.currentY;
+                        const distanceToMouse = Math.sqrt(distXFromMouse * distXFromMouse + distYFromMouse * distYFromMouse);
+
+                        let targetCharBrightnessIndex = data.originalBrightnessIndex; // Default to original
+
+                        if (distanceToMouse < rippleRadius && distanceToMouse > 0) {
+                            data.isUnderMouseInfluence = true; // Mark as influenced
+                            const normalizedDistance = distanceToMouse / rippleRadius;
+                            const effectStrength = Math.pow(1 - normalizedDistance, 2); // Quadratic falloff
+
+                            const repelForceMagnitude = (mouseRepulsionStrength * effectStrength) / distanceToMouse;
+                            forceX -= distXFromMouse * repelForceMagnitude;
+                            forceY -= distYFromMouse * repelForceMagnitude;
+
+                            // Calculate target brightness for burning effect (more empty chars for stronger burn)
+                            const burnIndexShift = Math.round(characterBurnIntensity * effectStrength);
+                            targetCharBrightnessIndex = data.originalBrightnessIndex - burnIndexShift;
+                            targetCharBrightnessIndex = Math.max(0, targetCharBrightnessIndex); // Ensure index doesn't go below 0
+                        }
+
+                        // 3. Apply Damping
+                        data.velocityX = (data.velocityX + forceX) * dampingFactor;
+                        data.velocityY = (data.velocityY + forceY) * dampingFactor;
+
+                        // 4. Update Current Position
+                        data.currentX += data.velocityX;
+                        data.currentY += data.velocityY;
+
+                        // 5. Interpolate Character Brightness (for healing)
+                        if (!data.isUnderMouseInfluence && !isMouseActive) {
+                            // Slowly heal character brightness back to original
+                            data.currentBrightnessIndex += (data.originalBrightnessIndex - data.currentBrightnessIndex) * healingSpeedFactor;
+                            // Clamp to integer index
+                            data.currentBrightnessIndex = Math.round(data.currentBrightnessIndex);
+                            data.currentBrightnessIndex = Math.max(0, Math.min(data.currentBrightnessIndex, charBrightnessMap.length - 1));
+                        } else {
+                            // If under influence or active, snap directly to target brightness
+                            data.currentBrightnessIndex = targetCharBrightnessIndex;
+                        }
+
+
+                        // 6. Apply CSS Transform, Character, and Color
+                        const translateX = data.currentX - data.originalX;
+                        const translateY = data.currentY - data.originalY;
+                        data.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
+
+                        // Update text content only if it actually changes to prevent unnecessary DOM updates
+                        const newChar = charBrightnessMap[data.currentBrightnessIndex];
+                        if (data.element.textContent !== newChar) {
+                            data.element.textContent = newChar;
+                        }
+                        // Always set color to originalCharColor to prevent any lingering effects
+                        if (data.element.style.color !== originalCharColor) {
+                            data.element.style.color = originalCharColor;
+                        }
+                    });
+
+                    // Request the next animation frame
+                    animationFrameId = requestAnimationFrame(animationLoop);
+                }
+
+                // Mouse move event handler - updates target mouse position and activity time
+                document.body.addEventListener('mousemove', (event) => {
+                    targetMouseX = event.clientX;
+                    targetMouseY = event.clientY;
+                    lastActivityTime = Date.now(); // Reset activity timer
+                });
+
+                // Mouse leave event handler to move influence off-screen and update activity time
+                document.body.addEventListener('mouseleave', () => {
+                    targetMouseX = -1000; // Far off-screen
+                    targetMouseY = -1000;
+                    lastActivityTime = Date.now(); // Reset activity timer, start healing countdown
+                });
+
+                // Handle window resize: cancel current loop, re-initialize characters, start new loop
+                window.addEventListener('resize', () => {
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                    if (healingCheckIntervalId) {
+                        clearInterval(healingCheckIntervalId);
+                        healingCheckIntervalId = null;
+                    }
+                    // Re-check if still in desktop view after resize
+                    if (window.getComputedStyle(asciiArtContainer).display !== 'none') {
+                        initializeAsciiCharacters();
+                    }
+                });
+
+                // Initial call to set up characters and start the animation
+                initializeAsciiCharacters();
+            } else {
+                console.log("Mobile view detected, animation skipped.");
+            }
+        });
+    </script>
+</body>
+</html>
