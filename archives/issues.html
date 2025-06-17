@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManaBurn Archives</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* --- Basic Setup & Aesthetics --- */
+        :root {
+            --green: #00ff41;
+            --background: #121212;
+            --shadow: rgba(0, 255, 65, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--green);
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem;
+            line-height: 1.5;
+            text-shadow: 0 0 5px var(--shadow);
+            overflow-x: hidden;
+        }
+
+        /* --- Terminal Container --- */
+        #terminal {
+            padding: 1rem;
+            min-height: 100%;
+        }
+
+        /* --- Output & ASCII Art --- */
+        #output {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .ascii-art {
+            color: var(--green);
+            text-shadow: 0 0 8px var(--shadow);
+            margin-bottom: 1rem;
+            font-family: 'Courier New', 'Lucida Console', monospace;
+            font-size: 0.75rem; /* Smaller font for detailed art */
+            line-height: 1;
+            white-space: pre;
+            user-select: none;
+            position: relative;
+        }
+        
+        #ascii-mobile {
+            display: none; /* Hidden by default */
+        }
+        
+        .ascii-char {
+            display: inline-block;
+            will-change: transform, opacity;
+        }
+
+        /* --- PDF Viewer Overlay --- */
+        #pdf-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            z-index: 1000;
+        }
+
+        #pdf-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            max-height: 90vh;
+        }
+
+        #pdf-container iframe {
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--green);
+            box-shadow: 0 0 20px var(--shadow);
+            background: #fff; /* White background for PDF loading */
+        }
+
+        #close-pdf {
+            margin-top: 1rem;
+            background: var(--background);
+            color: var(--green);
+            border: 1px solid var(--green);
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        #close-pdf:hover {
+            background: var(--green);
+            color: var(--background);
+        }
+
+        /* --- Zine List Styling --- */
+        #zine-list {
+            margin-top: 1.5rem;
+        }
+        
+        .zine-file {
+            display: block;
+            padding-left: 2rem;
+            position: relative;
+        }
+        
+        .zine-file::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+        }
+
+        .zine-file a {
+            color: var(--green);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .zine-file a:hover {
+            background-color: var(--green);
+            color: var(--background);
+        }
+        
+        /* --- Responsive Design for ASCII Art --- */
+        @media (max-width: 768px) {
+            #ascii-desktop {
+                display: none;
+            }
+            #ascii-mobile {
+                display: block;
+            }
+            body {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="terminal">
+        <pre id="ascii-desktop" class="ascii-art"></pre>
+        <pre id="ascii-mobile" class="ascii-art"></pre>
+        <div id="output"></div>
+        <div id="zine-list"></div>
+    </div>
+
+    <div id="pdf-viewer">
+        <div id="pdf-container"></div>
+        <button id="close-pdf">Close [ESC]</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Configuration ---
+            const GITHUB_USER = 'manaburndotnet';
+            const GITHUB_REPO = 'manaburndotnet.github.io';
+            const PDF_FOLDER = 'PDFs';
+            const REPO_BRANCH = 'main'; 
+
+            // --- DOM Elements ---
+            const output = document.getElementById('output');
+            const asciiDesktop = document.getElementById('ascii-desktop');
+            const asciiMobile = document.getElementById('ascii-mobile');
+            const zineListContainer = document.getElementById('zine-list');
+            const pdfViewer = document.getElementById('pdf-viewer');
+            const pdfContainer = document.getElementById('pdf-container');
+            const closePdfButton = document.getElementById('close-pdf');
+            
+            // --- ASCII Art ---
+            const desktopArt = `
+                                                                                                                                                                                                                                                                                        
+          @@@@@@@@  @@@        @@@@@@@@@@@#%@                                                                                                                                                                                                                                                
+        @@-......:#*-.+@@     @+.:.-:==....*@                                                                                                                                                                                                                                                
+        @%==@@@+.......-@@     @@@@@*..=..:@@                                       @@@@@           @@@@@@@   @@  @@  @@@                                                                                                                                                                 
+          @     @*..-..:.*@          @+......:@          @@@@@@@@@@@@@   @@@@@..-#@@       @@#+--:-.:+@ @#-=%#=:@@:+@@                                                                                                                                                                    
+                @+=:..-:::@@       @#=*:..:#.-@         @=.....:=*:.%@ @@+.....:-+:+%@@   @@##+--...@@ @%%%#.-:.:.%@@                                                                                                                                                                    
+                @=-:=+=.+:.@@     @@::@+.-%-:=@@          @@@@+......+@ @*-@@@-:..+:.#@@@        @@..:@@     @@--...::*@                                                                                                                                                                    
+              @@.-@@..-:...@@    @@@@@@@#.+:=.=@            @@...=...%@@ @@  @@.#%..:*..=@@       @%.=@     @@@@+.....:@@                                                                                                                                                                  
+              @@*@@@@+-%#+:+@@ @@+-@@ @@*#=.:-+@          @*+@@==-:.:+@@      @@@@@*#:...:-@@     @@*#@   @#:@@@=.-+:..@@                                                                                                                                                                  
+             @@@@     @+%::..-@@@-.%@   @@:---:.@@       @@=.%@@@+.::..+@     @@-+@  @@:=#*.:%@@   @@=%@ @@#.=@  @:.:%:.%@                                                                                                                                                                  
+            @%-%@     @@:::...:#:.#@     @@@@#-..-@     @@=.#@  @%-=:-%%@@   @@:-@   @@+:.:#::@@ @@:#@@@::+@   @@-*....=@@                                                                                                                                                                  
+            @=:%@      @@+.:...:.:@@      @@+:-::.#@   @@:.-@    @*.....:#@  @@.*@      @@-.....@@@@+@@%..:@@    @*+#.+.%#@                                                                                                                                                                  
+           @%:@@         @+::=:-:.#@        @@..-...@@@-..+%@    @%:.:-..:@@ @%::@        @#.....-@@+@#...=@     @@@@%:+-#@%@@                                                                                             -                                                                   
+           @@-.@@          @+.....:@@          @*=.+..:@*...%@   @@@@@*:.-...+@@#.:@         @@*=:..-@.-...-@  @@@#@@@@.:-..:=@@                                                                                                                                                                
+           @%.:@@          @@::....=@@        @@-:#:..+....%@@@@==@@ @%++=..-#@...-@@         @#...........=@@+=:@@  @@++*@-:+@@                                                                                                                                                                
+          @@..:@@           @%......*@        @@.:.+........#:.+:@@   @#....%*=-:.:.%@@@@@     @@+...........#..%@    @%..*%:.:*@                                                                                                                                                                
+         @@-...:@@            @-....+@@       @#=:...........:..*#@ @@ @@+.:%@:.%%#....*:%@      @@=.:%+:#%##*+#%@      @@%@@@@@@@                                                                                                                                                                
+        @@.-===#@@            @@..:@@@        @@%@@@@@@@@@@@@@@@@@@%-:++-=+#@@#%=:@@@@@@@        @@:#@ @@                                                                                                                                                                                
+      @@=:@@                  @@.=@@                  @+..:@+....:...-@           @@@                                                                                                                                                                                             
+      @@*@@                     @@@                     @@@@@@---=.++-@@@@@@@@@@@@@@@@                                                                                                                                                                                                   
+                                                          @#--..:.#@:..=.-.:...+:##@@                                                     @@@@@@@@@@@@@    @@%@@@           @@@@@@@@  
+                                                          @@-%-%..:@@@@@@@@+:*:=....*@        @@   @@@@@@      @@@@@@@@@*=@@@@@@@@@@@@+:..-:......+@@@@@+...@@@     @@%-:::.-..@@ 
+                                                           @+=+.:--@@       @-=:....+@      @@=::-%@+=.%@@      @*=+:=.:=--*:#:.-++..*@@@@@@%-......::.........+@@   @@%@%%#:..+@   
+                                                          @@..=.::+@@      @@=.....:@@       @@@@%=..:.@@        @@:.#@@%@@@@%+%=:.@@       @#......#@@%...:.-=.%@@         @+..*@   
+                                                          @%*....##@@  @@@%#:.-:%@@@@@@@@@@@   @@.....@@          @+.-+@*@  @@:@-.:@        @-....*@  @%+@#.-....#@@        @=.@@   
+                                                          @%:....+*-=@@:.*:..:.:*..:.=:....#@@@@....=@           @+.:==%@  @+:=..:@       @#.:..+@   @@@@@@@*-+-+.:+@       @*:@@   
+                                                          @@:*#-=#:@@@@@@@@@@@@@@@@#*........-@@....-@           @+.-.==@  @#+:--:@      @*...=@@    @#:@@  @%=*=-:-@@      @+:@@   
+                                                          @@......:@         @=.-:......-@@.....@           @@:*.:+@  @@::#-:@ @@@@@+=%%@@@       @@+@@   @@+#--=.*@@ @++@@   
+                                                          @*.=-#=.:@         @=-==......-@@+.+-.@           @#=---#@  @%::..=#@:....#:.=@@        @+-@@    @%+@+:+*@@@@#@  
+                                                          @%:.=.-.:@@         @@..--....:.%@@..:..@@          @+.-+.*@  @%:..:.@@@@#:::....@@     @@%%@@      @@*+=-..*@@@@  
+                                                          @@..:.:+.@@         @@=.......:#@@@..:.%@@         @#=..-.@@  @%:+...@@  @@%......+@@   @@*+%@        @@:%::=#*:%@   
+                                                          @@:.:..:.@@         @@@@-%+%=:*@@@ @@-:::==@       @@+-@#--+@  @#.:-=:@@    @@-=#.-#:#@@ @#:#=%@        @@-:=.-..-@@ 
+                                                          @@........@@@   @@@@=--%-#+--:@@    @=-.:..-@@@@@@@@::.**:+.#@@@@-....:@@@@  @@=..-%%-=@@@%..:-:@@@@@     @@::...#@   
+                                                           @=.........:=++=+-%=*=:-+%*#@@@     @@-+...%-#...#@@@@@=..:...:@#.........@@   @#-:+%+=@%@#.-=++:=-*@@     @@..*@@  
+                                                          @=-##**#%##%%@@@@@@@@@         @@@@@@@@    @@@@@@@:#@@@@@@   @@@@@@@%@@@@@      @@*@@   
+                                                           @@@@   @@                                          @@@@                  @@       `;
+            const mobileArt = `
+                          @@@                                                                                                       
+        @%*****#%*#@    @@=-=+*=:.=@                                                                                                      
+        @##@@*.....+@    @@@%.:::+@                 @@%@@       @@@@@@  @@@@@@@@@                                                         
+          @ -::.:.*@      @*-..::*@     @#=++=#%=@@ @*-=-::+@@  @@=:....+@@+-*:.--*@@                                                         
+         @@--=+:::#@   @#:#--#:*@      @@@@=....#@@+*@#-:--:#@@   @@%-.%@ @@@+=.-:+@                                                         
+         @#-%@:-:::@@  @@@@@+--:#@        @@%-:..%@@   @@@#--..-@@   @*:@  @%+@:...-%                                                         
+        @@@@  @#*+:-%@%:%@ @@*--:#@   @@=+@@+:-:+@   @*%@@@=-+:+@@ @*=@ @*:@@@+-+-+@                                                         
+        @*%@   @--..::.*@   @@@+:-@@ @%:=@ @@-:-*#@  @+#@  @%::+:#@@*-@@-:%@ @%#:.::@@                                                         
+       @#+%@   @%:-.:::@@   @%-::.+@@*::#@  @*....+@ @**@   @@+..:*@@@%:.=@   @*=-=*%@                                                         
+       @@-*@     @#:...*@     @%:-::##..#@ @@%@#-::.+@%:=@     @@+..-+.:.:@@@%*%@@-=-:-@@                                                         
+       @+-*@      @-...:*@      @=-:.....=@%-*@@@@-..:=#:.=@@@     @+.......:-::%@  %-:*:-%@                                                         
+      @#:.-%@      @%:..-#@   @@+-..:.....:.+% @@@#:-#-=*+-:-=%@   @#.-+-+*+=+%@   @%*%@##@                                                         
+     @*:##%@        @*.=@@      @@@@@@@@@@@@@@@+.:::-*#=++@  @        @%#@                                                                    
+     @+@@           @%@               @@%@@+.::--#@@@@@@@@@@                                                                                
+      @                                %+-::-%--+--:.--=*%@          @@       @@@ @@@@ @@ @@@@@@@@@@@@@ @@%*%@      @@@@@@@@ 
+                                       @+--=:#@@  @@#=....@@   @@@@@@#-#@   @*::-+=-:-*-====+*-::.....:%-.:..:%@@  @-=-=::-@ 
+                                       @=::.=#@   @@#:.::*@    @%%%+-.-%      @@*.+%#@@@##=:#@  @@@#:...=%@=.::=:#@  @@@@+.+@ 
+                                       %-...#%@@%*==..=*+==+*#%@@@::-*@       @%:=+*@ @+=:-@      @-..=@@ @@@*=::=#@@   %-%@ 
+                                       @-*==++@@@@@@@@@@#+-.=..:*@:..+@       @#::-+@ @====@     @-.:#@  @%+@@@%=:=-%@  %-@@ 
+                                       @--:.-#        @@::-:...+@...-@        @==:*@ @*=*-%@@@#==%@@    @%+@  @@+--:=% @+@@ 
+                                      @#=::+:#@        @@::-....+@*..-@       @#:.:=@ @+.--@@*---..*@   @#=@    @@#+:=@@@@  
+                                       @-:-+*@         @@::...:+@@:-:+@       @+:::%@ @+:..%@ @%-.::-%@  @%+@@    @@*=:++-#@ 
+                                       @-....+@@    @@%*%***-*@@ @+-.=*@@@@@@#-*=:-@@@+:-:#@@  @+:.--+@@@-:-%@@@@  @%-:..-@ 
+                                       @=......-+##+*#=--++*@@   @%-..=-=::#@@@+.:..:@=.....:@@ @#-:#+*@@-:+=--*@   @@::#@  
+                                       @=-##**#%##%%@@@@@@@@@         @@@@@@@@    @@@@@@@:#@@@@@@   @@@@@@@%@@@@@      @@*@@  
+                                        @@                               @@@                                             
+        `;
+            
+            // --- RIPPLE EFFECT CODE ---
+            let charData = [];
+            const springStiffness = 0.08;
+            const dampingFactor = 0.85;
+            const mouseRepulsionStrength = 50;
+            const rippleRadius = 80;
+            const characterBurnIntensity = 5;
+            const charBrightnessMap = [' ', ' ', ' ', '.', ',', ':', ';', '=', '+', '*', '?', '%', '#', '@'];
+            
+            let targetMouseX = -1000, targetMouseY = -1000;
+            let smoothedMouseX = -1000, smoothedMouseY = -1000;
+            const mouseSmoothingFactor = 0.15;
+            
+            const inactivityThresholdMs = 15000;
+            const healingSpeedFactor = 0.05;
+            let lastActivityTime = Date.now();
+            
+            let animationFrameId = null;
+
+            function initializeRippleEffect() {
+                const isDesktopView = window.getComputedStyle(asciiDesktop).display !== 'none';
+                if (!isDesktopView) return;
+
+                const originalText = asciiDesktop.textContent;
+                asciiDesktop.innerHTML = '';
+                charData = [];
+
+                const lines = originalText.split('\n');
+                lines.forEach((line) => {
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        const span = document.createElement('span');
+                        span.className = 'ascii-char';
+                        span.textContent = char;
+                        asciiDesktop.appendChild(span);
+                        
+                        const getBrightnessIndex = (c) => {
+                            const index = charBrightnessMap.indexOf(c);
+                            return index === -1 ? 0 : index;
+                        };
+
+                        charData.push({
+                            element: span,
+                            originalChar: char,
+                            originalBrightnessIndex: getBrightnessIndex(char),
+                            originalX: 0, originalY: 0,
+                            currentX: 0, currentY: 0,
+                            velocityX: 0, velocityY: 0,
+                            currentBrightnessIndex: getBrightnessIndex(char)
+                        });
+                    }
+                    asciiDesktop.appendChild(document.createTextNode('\n'));
+                });
+
+                // Remove last newline
+                if (asciiDesktop.lastChild && asciiDesktop.lastChild.nodeType === Node.TEXT_NODE) {
+                    asciiDesktop.removeChild(asciiDesktop.lastChild);
+                }
+
+                setTimeout(() => {
+                    charData.forEach(data => {
+                        const rect = data.element.getBoundingClientRect();
+                        data.originalX = rect.left + rect.width / 2;
+                        data.originalY = rect.top + rect.height / 2;
+                        data.currentX = data.originalX;
+                        data.currentY = data.originalY;
+                    });
+
+                    if (!animationFrameId) {
+                        animationLoop();
+                    }
+                }, 100);
+            }
+
+            function animationLoop() {
+                smoothedMouseX += (targetMouseX - smoothedMouseX) * mouseSmoothingFactor;
+                smoothedMouseY += (targetMouseY - smoothedMouseY) * mouseSmoothingFactor;
+
+                const isInactive = Date.now() - lastActivityTime > inactivityThresholdMs;
+
+                charData.forEach(data => {
+                    let forceX = (data.originalX - data.currentX) * springStiffness;
+                    let forceY = (data.originalY - data.currentY) * springStiffness;
+
+                    const distXFromMouse = smoothedMouseX - data.currentX;
+                    const distYFromMouse = smoothedMouseY - data.currentY;
+                    const distanceToMouse = Math.sqrt(distXFromMouse * distXFromMouse + distYFromMouse * distYFromMouse);
+                    
+                    let targetCharBrightnessIndex = data.originalBrightnessIndex;
+
+                    if (distanceToMouse < rippleRadius && distanceToMouse > 0) {
+                        const effectStrength = Math.pow(1 - (distanceToMouse / rippleRadius), 2);
+                        const repelForceMagnitude = (mouseRepulsionStrength * effectStrength) / distanceToMouse;
+                        forceX -= distXFromMouse * repelForceMagnitude;
+                        forceY -= distYFromMouse * repelForceMagnitude;
+
+                        const burnIndexShift = Math.round(characterBurnIntensity * effectStrength);
+                        targetCharBrightnessIndex = Math.max(0, data.originalBrightnessIndex - burnIndexShift);
+                    }
+
+                    data.velocityX = (data.velocityX + forceX) * dampingFactor;
+                    data.velocityY = (data.velocityY + forceY) * dampingFactor;
+                    data.currentX += data.velocityX;
+                    data.currentY += data.velocityY;
+
+                    if (isInactive) {
+                         data.currentBrightnessIndex += (data.originalBrightnessIndex - data.currentBrightnessIndex) * healingSpeedFactor;
+                    } else {
+                        data.currentBrightnessIndex = targetCharBrightnessIndex;
+                    }
+                    
+                    const newChar = charBrightnessMap[Math.round(data.currentBrightnessIndex)];
+                    if (data.element.textContent !== newChar) {
+                        data.element.textContent = newChar;
+                    }
+                    
+                    data.element.style.transform = `translate(${data.currentX - data.originalX}px, ${data.currentY - data.originalY}px)`;
+                });
+
+                animationFrameId = requestAnimationFrame(animationLoop);
+            }
+            
+            // --- ZINE LISTER CODE ---
+
+            async function initTerminal() {
+                asciiDesktop.textContent = desktopArt;
+                asciiMobile.textContent = mobileArt;
+                output.textContent = 'Initializing...\nConnecting to GitHub repository...';
+                
+                initializeRippleEffect(); // Initialize the ripple effect
+                
+                await listZines();
+            }
+
+            async function listZines() {
+                try {
+                    const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${PDF_FOLDER}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+                    const files = await response.json();
+                    
+                    const pdfFiles = files
+                        .filter(file => file.type === 'file' && file.name.toLowerCase().endsWith('.pdf'))
+                        .map(file => file.name);
+
+                    output.textContent = 'Connection established. Archives online.';
+
+                    if (pdfFiles.length > 0) {
+                        zineListContainer.innerHTML = 'Available transmissions:<br><br>';
+                        pdfFiles.forEach(zine => {
+                            const fileElement = document.createElement('div');
+                            fileElement.className = 'zine-file';
+                            fileElement.innerHTML = `<a onclick="openZine('${zine}')">${zine}</a>`;
+                            zineListContainer.appendChild(fileElement);
+                        });
+                    } else {
+                        zineListContainer.textContent = `No PDF files found in '${PDF_FOLDER}' directory.`;
+                    }
+                } catch (error) {
+                    console.error('Error fetching zine list:', error);
+                    output.textContent = `Error: Could not retrieve file list from repository.`;
+                }
+            }
+            
+            window.openZine = function(filename) {
+                const pdfUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${REPO_BRANCH}/${PDF_FOLDER}/${encodeURIComponent(filename)}`;
+                pdfContainer.innerHTML = `<iframe src="${pdfUrl}"></iframe>`;
+                pdfViewer.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closePdf() {
+                pdfViewer.style.display = 'none';
+                pdfContainer.innerHTML = '';
+                document.body.style.overflow = 'auto';
+            }
+
+            // --- Event Listeners ---
+            closePdfButton.addEventListener('click', closePdf);
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && pdfViewer.style.display === 'flex') {
+                    closePdf();
+                }
+            });
+            
+            window.addEventListener('mousemove', (e) => {
+                targetMouseX = e.clientX;
+                targetMouseY = e.clientY;
+                lastActivityTime = Date.now();
+            });
+
+            window.addEventListener('resize', () => {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+                initializeRippleEffect();
+            });
+            
+            // --- Initialization ---
+            initTerminal();
+        });
+    </script>
+</body>
+</html>
